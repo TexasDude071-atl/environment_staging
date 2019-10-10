@@ -1,0 +1,64 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: texasdude071-atl
+  labels:
+    net.beedemo.deploy.type: workshop
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  selector:
+    app: texasdude071-atl
+---
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: texasdude071-atl-staging
+  labels:
+    net.beedemo.deploy.type: workshop
+spec:
+  replicas: 1
+  template:
+    metadata:
+      name: texasdude071-atl
+      labels:
+        net.beedemo.deploy.type: workshop
+        app: texasdude071-atl
+        env: staging
+    spec:
+      serviceAccountName: cjoc
+      containers:
+      - name: texasdude071-atl
+        image: gcr.io/core-workshop/helloworld-nodejs:texasdude071-atl-3
+        resources:
+          requests:
+            memory: "100Mi"
+            cpu: "50m"
+        imagePullPolicy: Always
+        ports:
+        - name: public
+          containerPort: 8080
+      securityContext:
+        runAsUser: 1000
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: texasdude071-atl
+  labels:
+    net.beedemo.deploy.type: workshop
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /texasdude071-atl/?(.*)
+        backend:
+          serviceName: texasdude071-atl
+          servicePort: 80
+    host: staging.cb-sa.io
